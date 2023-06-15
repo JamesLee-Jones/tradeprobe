@@ -2,8 +2,6 @@ from queue import PriorityQueue
 from dataclasses import dataclass
 from enum import Enum
 
-import pandas as pd
-
 
 class EventManager:
     """The main object used to run a backtest."""
@@ -15,6 +13,8 @@ class EventManager:
         """The main loop for handling events."""
         while not self.event_queue.empty:
             match self.event_queue.get_nowait().type:
+                case EventType.TICK:
+                    pass
                 case EventType.FILL:
                     pass
                 case EventType.ORDER:
@@ -27,13 +27,13 @@ class EventManager:
 
 
 class EventType(Enum):
-    SIGNAL = 1
-    ORDER = 2
-    FILL = 3
+    TICK = 1
+    SIGNAL = 2
+    ORDER = 3
+    FILL = 4
 
 
 @dataclass
 class Event:
     timestamp: float
     type: EventType
-
