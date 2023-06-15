@@ -88,4 +88,4 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Test with pytest
         run: |
-          python3.11 -m pytest
+          python3.11 -m pytest --suppress-no-test-exit-code
