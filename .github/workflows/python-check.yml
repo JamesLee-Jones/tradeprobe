@@ -70,6 +70,7 @@ jobs:
         run: python3.11 -m mypy tradeprobe
 
   pytest:
+    needs: [flake8, mypy]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
