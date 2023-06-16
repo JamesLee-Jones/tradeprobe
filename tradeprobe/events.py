@@ -1,5 +1,5 @@
-from queue import PriorityQueue
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 
 
@@ -13,40 +13,34 @@ class Direction(Enum):
     SELL = 'SELL'
 
 
-class EventManager:
-    """The main object used to run a backtest."""
+@dataclass
+class Event(object):
+    timestamp: datetime
 
-    def __init__(self):
-        self.event_queue: PriorityQueue[Event] = PriorityQueue()
+    def __lt__(self, other):
+        assert isinstance(other, Event)
+        return self.timestamp < other.timestamp
 
-    def run(self):
-        """The main loop for handling events."""
-        while not self.event_queue.empty:
-            match self.event_queue.get_nowait().__class__.__name__:
-                case 'MarketEvent':
-                    pass
-                case 'SignalEvent':
-                    pass
-                case 'OrderEvent':
-                    pass
-                case 'FillEvent':
-                    pass
-                case _:
-                    # TODO: Throw error as this is invalid.
-                    pass
+
+@dataclass(eq=True)
+class MarketEvent(Event):
+    """
+    Handle receiving market updates.
+    """
+
+
+@dataclass(eq=True)
+class OLHCVIMarketEvent(MarketEvent):
+    """Used to post market updates in the OLHCVI format."""
+    symbol: str
+    open: float
+    low: float
+    high: float
+    close: float
+    volume: int
 
 
 @dataclass
-class Event(object):
-    timestamp: float
-
-
-class MarketEvent(Event):
-    """
-    Handle receiving market updates
-    """
-
-
 class SignalEvent(Event):
     """
     Handle the sending of a Signal from a strategy object.
@@ -56,6 +50,7 @@ class SignalEvent(Event):
     signal_type: SignalType
 
 
+@dataclass
 class OrderEvent(Event):
     """Handle sending an Order."""
     symbol: str
@@ -70,6 +65,7 @@ class OrderEvent(Event):
         return f"Order: Symbol={self.symbol}, Quantity={self.quantity}, Direction={self.direction}"
 
 
+@dataclass
 class FillEvent(Event):
     """Encapsulate a filled order from a brokerage."""
     symbol: str
