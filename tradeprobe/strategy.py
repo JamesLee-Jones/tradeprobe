@@ -1,7 +1,22 @@
+from abc import ABCMeta, abstractmethod
+from typing import List
+
+from tradeprobe.events import SignalEvent
+
+
 class Strategy:
     """
-    Handle the execution logic of trading strategy's.
+    An abstract base class to be inherited from.
+
+    Generates signals for particular symbols based on inputs of bars.
     """
 
-    def __init__(self):
-        pass
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def calculate_signals(self) -> List[SignalEvent]:
+        """
+        Calculate a list of signals
+        :return:  calculated by the strategy
+        :type: List[SignalEvent]
+        """
