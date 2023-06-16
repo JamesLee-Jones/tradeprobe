@@ -1,12 +1,12 @@
 import os.path
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
-from typing import List, Set, Generator, Any, Iterable, Hashable
+from typing import List, Set, Generator, Any, Iterable
 
 import pandas as pd
 from pandas import Series
 
-from tradeprobe.trading_engine import OLHCVIMarketEvent
+from tradeprobe.events import OLHCVIMarketEvent, MarketEvent
 
 
 class DataHandler(object):
@@ -17,17 +17,17 @@ class DataHandler(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def get_bars(self):
+    def get_bars(self) -> List[MarketEvent]:
         """Get the next available bar from the data source."""
         raise NotImplementedError("Implement get_next_bar().")
 
     @abstractmethod
-    def get_symbol_list(self):
+    def get_symbol_list(self) -> Set[str]:
         """Get the list of available symbols."""
         raise NotImplementedError("Implement get_next_bar().")
 
     @abstractmethod
-    def get_current_tick(self):
+    def get_current_tick(self) -> datetime:
         """Get the frequency of the data."""
         raise NotImplementedError("Implement get_data_frequency().")
 
@@ -46,8 +46,7 @@ class CSVDataHandler(DataHandler):
         # Dictionary mapping symbol to data
         self.symbol_data: dict[str, Iterable[tuple[datetime | None, Series]]] = {}
 
-        self.current_tick = 0
-
+        self.current_tick: datetime = datetime.now()
         self._open_and_convert_csv_files()
 
     def _open_and_convert_csv_files(self):
@@ -58,6 +57,7 @@ class CSVDataHandler(DataHandler):
         # Initialize combined index and symbol data dictionary
         comb_index = None
         symbol_data = {}
+        set_datetime = False
 
         # Loop through each symbol
         for symbol in self.symbol_list:
@@ -80,6 +80,11 @@ class CSVDataHandler(DataHandler):
             # Reindex DataFrame to align with the combined index and forward-fill missing values
             df = df.reindex(index=comb_index, method='pad')
 
+            # Set the current tick without advancing the iterator
+            if not set_datetime:
+                self.current_tick = df.index.min()
+                set_datetime = True
+
             # Calculate returns and drop rows with missing values
             df["returns"] = df["adj_close"].pct_change().dropna()
 
@@ -100,17 +105,17 @@ class CSVDataHandler(DataHandler):
             yield OLHCVIMarketEvent(timestamp=self.current_tick,
                                     symbol=symbol,
                                     open=i[1][0],
-                                    low=i[1][1],
-                                    high=i[1][2],
+                                    high=i[1][1],
+                                    low=i[1][2],
                                     close=i[1][3],
-                                    volume=i[1][4])
+                                    volume=i[1][5])
 
-    def get_bars(self):
+    def get_bars(self) -> List[MarketEvent]:
         """Get the next available bar from the data source."""
         events = []
         for symbol in self.symbol_list:
             try:
-                event = self._get_next_bar(symbol).__next__()
+                event = next(self._get_next_bar(symbol))
             except StopIteration:
                 # Stop using this datasource as it is empty
                 pass
@@ -119,11 +124,11 @@ class CSVDataHandler(DataHandler):
                     events.append(event)
         return events
 
-    def get_symbol_list(self):
+    def get_symbol_list(self) -> Set[str]:
         """Get the list of available symbols."""
         return self.symbol_list
 
-    def get_current_tick(self):
+    def get_current_tick(self) -> datetime:
         """Get the frequency of the data."""
         return self.current_tick
 
