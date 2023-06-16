@@ -77,4 +77,3 @@ class FillEvent(Event):
     def __post_init__(self):
         if self.quantity < 0:
             raise ValueError("The order quantity must be non-negative.")
-

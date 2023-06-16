@@ -44,7 +44,7 @@ class CSVDataHandler(DataHandler):
         self.symbol_list = symbol_list
 
         # Dictionary mapping symbol to data
-        self.symbol_data: dict[str, Iterable[tuple[datetime | None, Series]]] = {}
+        self.symbol_data: dict[str, Iterable[tuple[datetime, Series]]] = {}
 
         self.current_tick: datetime = datetime.now()
         self._open_and_convert_csv_files()
@@ -94,7 +94,7 @@ class CSVDataHandler(DataHandler):
         # Update the symbol data dictionary of the backtesting framework
         self.symbol_data = symbol_data
 
-    def _get_next_bar(self, symbol) -> Generator[OLHCVIMarketEvent, Any, None]:
+    def _get_next_bar(self, symbol) -> Generator[MarketEvent, Any, None]:
         """
         Return the latest bar of the data feed as a MarketEvent.
         :return:
@@ -112,7 +112,7 @@ class CSVDataHandler(DataHandler):
 
     def get_bars(self) -> List[MarketEvent]:
         """Get the next available bar from the data source."""
-        events = []
+        events: List[MarketEvent] = []
         for symbol in self.symbol_list:
             try:
                 event = next(self._get_next_bar(symbol))
