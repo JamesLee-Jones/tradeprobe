@@ -6,7 +6,7 @@ from typing import List, Set, Generator, Any, Iterable
 import pandas as pd
 from pandas import Series
 
-from tradeprobe.events import OLHCVIMarketEvent, MarketEvent
+from tradeprobe.events import OLHCVIMarketEvent, MarketEvent, EventQueue
 
 
 class DataHandler(object):
@@ -16,8 +16,11 @@ class DataHandler(object):
 
     __metaclass__ = ABCMeta
 
+    def __init__(self) -> None:
+        self.event_queue: EventQueue = EventQueue()
+
     @abstractmethod
-    def get_bars(self) -> List[MarketEvent]:
+    def get_bars(self) -> None:
         """Get the next available bar from the data source."""
         raise NotImplementedError("Implement get_next_bar().")
 
@@ -110,9 +113,8 @@ class CSVDataHandler(DataHandler):
                                     close=i[1][3],
                                     volume=i[1][5])
 
-    def get_bars(self) -> List[MarketEvent]:
+    def get_bars(self) -> None:
         """Get the next available bar from the data source."""
-        events: List[MarketEvent] = []
         for symbol in self.symbol_list:
             try:
                 event = next(self._get_next_bar(symbol))
@@ -121,8 +123,7 @@ class CSVDataHandler(DataHandler):
                 pass
             else:
                 if event is not None:
-                    events.append(event)
-        return events
+                    self.event_queue.put_nowait(event)
 
     def get_symbol_list(self) -> Set[str]:
         """Get the list of available symbols."""

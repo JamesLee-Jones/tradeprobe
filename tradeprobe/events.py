@@ -1,3 +1,4 @@
+from queue import Queue
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -77,3 +78,12 @@ class FillEvent(Event):
     def __post_init__(self):
         if self.quantity < 0:
             raise ValueError("The order quantity must be non-negative.")
+
+
+class EventQueue(Queue):
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(EventQueue, cls).__new__(cls)
+        return cls._instance
