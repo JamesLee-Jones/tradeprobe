@@ -27,7 +27,7 @@ class TradingEngine:
 
             while True:
                 try:
-                    match self.event_queue.get_event().__class__.__name__:
+                    match self.event_queue.get_nowait().__class__.__name__:
                         case 'MarketEvent':
                             pass
                         case 'SignalEvent':

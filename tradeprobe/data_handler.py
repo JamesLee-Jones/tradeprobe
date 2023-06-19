@@ -123,7 +123,7 @@ class CSVDataHandler(DataHandler):
                 pass
             else:
                 if event is not None:
-                    self.event_queue.put_event(event)
+                    self.event_queue.put_nowait(event)
 
     def get_symbol_list(self) -> Set[str]:
         """Get the list of available symbols."""
