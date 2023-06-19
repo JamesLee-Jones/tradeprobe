@@ -1,9 +1,8 @@
 import queue
-from multiprocessing import Queue
 
 from tradeprobe.broker import Broker
 from tradeprobe.data_handler import DataHandler
-from tradeprobe.events import Event, EventQueue
+from tradeprobe.events import EventQueue
 from tradeprobe.portfolio import Portfolio
 
 

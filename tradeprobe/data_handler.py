@@ -16,7 +16,7 @@ class DataHandler(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.event_queue: EventQueue = EventQueue()
 
     @abstractmethod
