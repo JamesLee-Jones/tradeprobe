@@ -1,3 +1,4 @@
+from asyncio import Queue
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -77,3 +78,19 @@ class FillEvent(Event):
     def __post_init__(self):
         if self.quantity < 0:
             raise ValueError("The order quantity must be non-negative.")
+
+
+class EventQueue:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__()
+            cls._instance.queue = Queue()
+        return cls._instance
+
+    def put_event(self, event: Event):
+        self.queue.put_nowait(event)
+
+    def get_event(self) -> Event:
+        return self.queue.get_nowait()

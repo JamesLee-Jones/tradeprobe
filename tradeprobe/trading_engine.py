@@ -3,7 +3,7 @@ from multiprocessing import Queue
 
 from tradeprobe.broker import Broker
 from tradeprobe.data_handler import DataHandler
-from tradeprobe.events import Event
+from tradeprobe.events import Event, EventQueue
 from tradeprobe.portfolio import Portfolio
 
 
@@ -19,20 +19,16 @@ class TradingEngine:
         self.end_datetime = end_datetime
         self.current_datetime = self.start_datetime
 
-        self.event_queue: Queue[Event] = Queue()
-
-    def register_event(self, event: Event):
-        self.event_queue.put_nowait(event)
+        self.event_queue: EventQueue = EventQueue()
 
     def run(self):
         """The main loop for handling events."""
         while self.current_datetime < self.end_datetime:
-            [self.event_queue.put_nowait(bar) for bar in self.data_handler.get_bars()]
             self.current_datetime = self.data_handler.get_current_tick()
 
             while True:
                 try:
-                    match self.event_queue.get_nowait().__class__.__name__:
+                    match self.event_queue.get_event().__class__.__name__:
                         case 'MarketEvent':
                             pass
                         case 'SignalEvent':

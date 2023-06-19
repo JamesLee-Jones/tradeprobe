@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import List
 
-from tradeprobe.events import SignalEvent
+from tradeprobe.events import SignalEvent, EventQueue
 
 
 class Strategy:
@@ -12,6 +12,9 @@ class Strategy:
     """
 
     __metaclass__ = ABCMeta
+
+    def __init__(self):
+        self.event_queue = EventQueue()
 
     @abstractmethod
     def calculate_signals(self) -> List[SignalEvent]:
