@@ -1,9 +1,10 @@
 from abc import ABCMeta, abstractmethod
 
-from tradeprobe.events import Event, EventQueue
+from tradeprobe.events import Event, EventQueue, MarketEvent, SignalEvent, FillEvent
+from tradeprobe.observer import Observer
 
 
-class Portfolio(object):
+class Portfolio(Observer):
     """
     An abstract class to hold the position and market value of
     all instruments at the resolution of a bar.
@@ -14,6 +15,12 @@ class Portfolio(object):
     def __init__(self, initial_capital=100000):
         self.initial_capital = initial_capital
         self.event_queue = EventQueue()
+        self.current_positions = {}
+        self.current_holdings = {}
+
+        self.event_queue.register_observer(self, MarketEvent)
+        self.event_queue.register_observer(self, SignalEvent)
+        self.event_queue.register_observer(self, FillEvent)
 
     @abstractmethod
     def update_on_signal(self, event: Event):
@@ -29,6 +36,21 @@ class Portfolio(object):
         """
         raise NotImplementedError("Implement update_on_fill()")
 
+    @abstractmethod
+    def update_timeindex(self, event: MarketEvent):
+        """
+        Add a new record to the positions matrix for current market data
+        bar.
+        """
+
+    def handle_event(self, event):
+        if isinstance(event, MarketEvent):
+            self.update_timeindex(event)
+        elif isinstance(event, SignalEvent):
+            self.update_on_signal(event)
+        elif isinstance(event, FillEvent):
+            self.update_on_fill(event)
+
 
 class NaivePortfolio(Portfolio):
     """
@@ -43,8 +65,6 @@ class NaivePortfolio(Portfolio):
 
     def __init__(self, initial_capital=100000):
         super().__init__(initial_capital)
-        self.current_positions = {}
-        self.current_holdings = {}
 
     @abstractmethod
     def update_on_signal(self, event: Event):

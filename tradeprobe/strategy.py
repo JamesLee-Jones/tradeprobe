@@ -1,10 +1,11 @@
 from abc import ABCMeta, abstractmethod
 from typing import List
 
-from tradeprobe.events import SignalEvent, EventQueue
+from tradeprobe.events import SignalEvent, EventQueue, MarketEvent
+from tradeprobe.observer import Observer
 
 
-class Strategy:
+class Strategy(Observer):
     """
     An abstract base class to be inherited from.
 
@@ -15,11 +16,18 @@ class Strategy:
 
     def __init__(self):
         self.event_queue = EventQueue()
+        self.event_queue.register_observer(self, MarketEvent)
 
     @abstractmethod
-    def calculate_signals(self) -> List[SignalEvent]:
+    def calculate_signals(self, event: MarketEvent) -> List[SignalEvent]:
         """
         Calculate a list of signals
         :return:  calculated by the strategy
         :type: List[SignalEvent]
         """
+        raise NotImplementedError("Implement calculate_signals()")
+
+    def handle_event(self, event):
+        # The Strategy object only cares about MarketEvents
+        if isinstance(event, MarketEvent):
+            self.calculate_signals(event)

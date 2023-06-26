@@ -50,7 +50,7 @@ jobs:
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: mypy
-        run: python3.11 -m mypy tradeprobe
+        run: python3.11 -m mypy --check-untyped-defs tradeprobe
 
   pytest:
     needs: [flake8, mypy]
