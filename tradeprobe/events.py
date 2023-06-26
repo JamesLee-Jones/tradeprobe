@@ -1,3 +1,4 @@
+import queue
 from queue import Queue
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,11 +17,11 @@ class Direction(Enum):
 
 @dataclass
 class Event(object):
-    timestamp: datetime
+    pass
 
-    def __lt__(self, other):
-        assert isinstance(other, Event)
-        return self.timestamp < other.timestamp
+
+class QueueEmptyEvent(Event):
+    pass
 
 
 @dataclass(eq=True)
@@ -28,11 +29,13 @@ class MarketEvent(Event):
     """
     Handle receiving market updates.
     """
+    timestamp: datetime
 
 
 @dataclass(eq=True)
 class OLHCVIMarketEvent(MarketEvent):
     """Used to post market updates in the OLHCVI format."""
+    timestamp: datetime
     symbol: str
     open: float
     low: float
@@ -47,6 +50,7 @@ class SignalEvent(Event):
     Handle the sending of a Signal from a strategy object.
     Used by the portfolio to decide trades.
     """
+    timestamp: datetime
     symbol: str
     signal_type: SignalType
 
@@ -54,6 +58,7 @@ class SignalEvent(Event):
 @dataclass
 class OrderEvent(Event):
     """Handle sending an Order."""
+    timestamp: datetime
     symbol: str
     quantity: int
     direction: Direction
@@ -69,6 +74,7 @@ class OrderEvent(Event):
 @dataclass
 class FillEvent(Event):
     """Encapsulate a filled order from a brokerage."""
+    timestamp: datetime
     symbol: str
     quantity: int
     direction: Direction
@@ -87,3 +93,32 @@ class EventQueue(Queue):
         if cls._instance is None:
             cls._instance = super(EventQueue, cls).__new__(cls)
         return cls._instance
+
+    def __init__(self):
+        super().__init__()
+        self.observers = {}
+
+    def put(self, event: Event, block: bool = False, timeout: float | None = None) -> None:
+        self.notify_observers(event)
+        super().put(event, block, timeout)
+
+    def register_observer(self, observer, event_type):
+        if observer in self.observers:
+            self.observers[observer].append(event_type)
+        else:
+            self.observers[observer] = [event_type]
+
+    def notify_observers(self, event):
+        for observer in self.observers:
+            for event_type in self.observers[observer]:
+                if isinstance(event_type, event):
+                    observer.handle_event(event)
+
+    def process_events(self):
+        while True:
+            try:
+                event = self.get_nowait()
+                self.notify_observers(event)
+            except queue.Empty:
+                self.put(QueueEmptyEvent())
+                break

@@ -1,15 +1,16 @@
 import os.path
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
-from typing import List, Set, Generator, Any, Iterable
+from typing import List, Set, Generator, Any, Iterable, Hashable
 
 import pandas as pd
 from pandas import Series
 
-from tradeprobe.events import OLHCVIMarketEvent, MarketEvent, EventQueue
+from tradeprobe.events import OLHCVIMarketEvent, MarketEvent, EventQueue, QueueEmptyEvent
+from tradeprobe.observer import Observer
 
 
-class DataHandler(object):
+class DataHandler(Observer):
     """
     An abstract base class for data handlers.
     """
@@ -47,10 +48,12 @@ class CSVDataHandler(DataHandler):
         self.symbol_list = symbol_list
 
         # Dictionary mapping symbol to data
-        self.symbol_data: dict[str, Iterable[tuple[datetime, Series]]] = {}
+        self.symbol_data = {}  # type: ignore
 
         self.current_tick: datetime = datetime.now()
         self._open_and_convert_csv_files()
+
+        self.event_queue.register_observer(self, QueueEmptyEvent)
 
     def _open_and_convert_csv_files(self):
         """
@@ -133,8 +136,13 @@ class CSVDataHandler(DataHandler):
         """Get the frequency of the data."""
         return self.current_tick
 
+    def handle_event(self, event):
+        if isinstance(event, QueueEmptyEvent):
+            self.get_bars()
+
 
 class MultiSourceDataHandler(DataHandler):
+
     def __init__(self, data_handlers: List[DataHandler]):
         super().__init__()
         self.data_handlers: List[DataHandler] = data_handlers
@@ -151,3 +159,6 @@ class MultiSourceDataHandler(DataHandler):
     def get_current_tick(self):
         """Get the frequency of the data."""
         raise NotImplementedError("Implement get_data_frequency().")
+
+    def handle_event(self, event):
+        pass
